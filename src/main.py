@@ -14,7 +14,7 @@ from stylelibrary import style
 
 class functions:
    
-   def add_password():
+   def add_password(self):
       print("test1234")
 
 
@@ -31,10 +31,9 @@ class UserSession:
         "Exit": "exit"
        }
         self.menu_options = {
-        "1": "create",
-        "Remove Password": "delete",
-        "Display All": "display",
-        "Exit": "exit",
+        "Make Profile": "create",
+        "Remove Profile": "delete",
+        "Exit": "exit"
        }
 
 
@@ -114,20 +113,32 @@ class UserSession:
       print("---- ----- Menu ----- ----")
       try:
          while True:   
-           option = input("Enter: ")
+          selection = input("Enter number: ")
 
-           while choice not in options:
-              print(style.bold_style(color.rgb_text(255, 165, 0, "The Value of Selected was not Found in Options please try again")))
-              self.main_menu()
+            # 1. Validate if the input is a number and within range
+          if selection.isdigit():
+            idx = int(selection) - 1  # Convert "1" to index 0
 
-           if option == "1":
-              self.subfunctions.add_password()
-      
+            if 0 <= idx < len(options):
+               selected_text = options[idx]
+               print(f"Selected: {selected_text}")
 
-      except KeyboardInterrupt as e:
-         print(f"Keyboard Interruption: {e}")
-         exit()
-          
+                    # 2. Logic based on what was selected
+               if selected_text == "Make Profile":
+                  self.subfunctions.add_password()
+                  break
+               elif selected_text == "Exit":
+                exit()
+               else:
+                print(f"Logic for {selected_text} not implemented yet.")
+            else:
+              print(style.bold_style(color.rgb_text(255, 0, 0, "Number out of range.")))
+         else:
+          print(style.bold_style(color.rgb_text(255, 0, 0, "Please enter a valid number.")))
+
+      except KeyboardInterrupt:
+        print("\nExiting...")
+        exit()
     
     
               
