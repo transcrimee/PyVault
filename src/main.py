@@ -13,10 +13,50 @@ from stylelibrary import color
 from stylelibrary import style
 
 class functions:
-   
+   def __init__(self):
+     self.dir = Path("profile")
+     self.dir.mkdir(parents=True, exist_ok=True)
+     self.bank = Path("storage")
+     self.bank.mkdir(parents=True, exist_ok=True)
+
    def add_password(self):
       print("test1234")
+   #-----------------------------------#
 
+   def make_profile(self):
+    try:
+     while True:
+      print("Please enter your profile name")
+      profile_name = input("Enter: ")
+      while profile_name == "": #Simple check to make sure username is not empty because it just be weird 
+        print("Please enter your profile name")
+        profile_name = input("Enter: ")
+      print("Please pick or make a Username")
+      username = input("Enter your username: ")
+      while username == "": #Simple check to make sure username is not empty because it just be weird   
+         print("Please pick or make a Username")
+         username = input("Enter your username: ")
+      print("Make Password with 4-30 characters one special character is required")
+      password = input("Enter your password: ")
+      while password == "":
+         print("Make Password with 4-30 characters one special character is required")
+         password = input("Enter your password: ")
+      password_hash = hashlib.sha256(f"{password}".encode()).hexdigest()  
+      print("Make Password with 4-30 characters one special character is required")
+      file_name = input("Enter your file name for your password: ")
+      while password == "": #Simple check to make sure username is not empty because it just be weird 
+        print("It seems that your file name for your password was empty please re-enter it!")
+        file_name = input("Enter your file name for your password: ")
+      with open(self.dir/f"{profile_name}.json", "w") as f: # Creates the username.json and ready to writes the username into it 
+       json.dump({"profile_name": profile_name, "username": username, "hash": password_hash, "file_name": file_name}, f, indent=4) # Dumps the username into the json file
+       empty_data = []
+       filename = f"{self.bank}/{file_name}.json"
+       with open(filename, 'w') as f_obj:
+        json.dump(empty_data, f_obj)           
+        print(f"Thanks, {username}! Your username has been saved")
+        print(f"Created empty JSON file: {filename}") 
+    except KeyboardInterrupt:
+      exit()
 
 class UserSession:
 
@@ -48,33 +88,59 @@ class UserSession:
         print("---- User Session Login ----")
         #print(f"Available profiles: {', '.join(self.list_profiles_and_options())}")
         profiles, options = self.list_profiles_and_options()
-        for key, value in enumerate(profiles, start=1):
-          print(f"{key}. {value}")
+        for i, name  in enumerate(profiles, start=1):
+          print(f"{i}. {name}")
         print("---- ----------- ----")
-        for key, value in enumerate(options, start=1):
-          print(f"{key}. {value}")
+        for i, opt in enumerate(options, start=1):
+          print(f"{i}. {opt}")
         try:
          while True:
             choice = input("--> ")
-            if not choice.endswith(".json"):
-              choice += ".json"
-            if choice in profiles:
-              print("---- ----- Verification ----- ----")
-              password = input("Password: ")
-              with open(f"profile/{choice}", "r") as file:
-                   data = json.load(file)
-              hash = hashlib.sha256(password.encode()).hexdigest()
-              if hash == data.get("password_hash"):
-               print(style.bold_style(color.rgb_text(0, 255, 0, " Login Successful! ")))
-               self.load_user(choice=choice)
-               self.main_menu(choice=choice)
-               return True
+            if not choice.isdigit():
+
+
+             if not choice.endswith('.json'):
+               choice += '.json'
+
+             filename = choice if choice.endswith('.json') else f"{choice}.json"
+            
+             if filename in profiles:
+           
+                      print("---- ----- Verification ----- ----")
+                      password = input("Password: ")
+                      with open(f"profile/{choice}", "r") as file:
+                       data = json.load(file)
+                       hash = hashlib.sha256(password.encode()).hexdigest()
+                       if hash == data.get("password_hash"):
+                        print(style.bold_style(color.rgb_text(0, 255, 0, " Login Successful! ")))
+                        self.load_user(choice=choice)
+                        self.main_menu(choice=choice)
+                        return True
+                       else:
+                        print(style.bold_style(color.rgb_text(255, 0, 0,  " Invalid Password. ")))
+                        return False
+            #---------------------------------------------------------------------------------#
+            elif choice.isdigit():
+              idx = int(choice) - 1  # Convert "1" to index 0
+
+              if 0 <= idx < len(options):
+                selected_text = options[idx]
+                print(f"Selected: {selected_text}")
+
+                    # 2. Logic based on what was selected
+                if selected_text == "Make Profile":
+                  self.subfunctions.make_profile()
+                  break
+                elif selected_text == "Exit":
+                 exit()
+                else:
+                 print(f"Logic for {selected_text} not implemented yet.")
               else:
-               print(style.bold_style(color.rgb_text(255, 0, 0,  " Invalid Password. ")))
-               return False
-        
+                print(style.bold_style(color.rgb_text(255, 0, 0, "Number out of range.")))
+            else:
+                print(style.bold_style(color.rgb_text(255, 0, 0, "Please enter a valid number.")))
         except KeyboardInterrupt: 
-           exit()    
+            exit()    
 
     def load_user(self, choice=""): # This method checks if the username.json file exists. If it does, it reads the file and loads the username from it. If the file does not exist, it prompts the user to enter a username, validates that it's not empty, and then saves it to username.json for future use. The method returns the username, which is stored in the instance variable self.username.
       if not choice:
