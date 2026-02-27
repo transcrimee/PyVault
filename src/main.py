@@ -1,303 +1,296 @@
+# Copyright (c) 2026 Nora Rose
+# Licensed under MIT License
+
 import os
 import sys
 import sys
 import json
 import glob
 import uuid
+import hashlib
 from pathlib import Path
+from stylelibrary import color
+from stylelibrary import style
 
-class ApplicationCore:
-  @staticmethod
-  def clear_screen(cls):
-    # Check the operating system name and run the appropriate command
-    if os.name == 'nt':
-        _ = os.system('cls') # Windows
-    else:
-        _ = os.system('clear') # Linux/macOS/Posix
+class functions:
+   def __init__(self):
+     self.dir = Path("profile")
+     self.dir.mkdir(parents=True, exist_ok=True)
+     self.bank = Path("storage")
+     self.bank.mkdir(parents=True, exist_ok=True)
 
-  def add_password(self, user_proflie, website, email, username, password):
-   self.clear_screen(cls="")
-   profile_json = f"password/proflie/{user_proflie}.json" #
-   if os.path.exists(profile_json):
-    with open(profile_json, "r") as f:
-     data = json.load(f)
-    file_path = data.get("file_name") # Get the name of json file by reading the section "file_name"  
-    print(file_path)
-    flie_location = f"password/storage/{file_path}.json" # here just seting up the path instead of typing the whole directory I can just type this flie_location
-    print(flie_location)
-    if os.path.exists(flie_location):
-     with open(flie_location, 'r') as f:
-      data_list = json.load(f)
-      print("Working Operational")
-      website = input("Enter -> Website Name ")
-      email = input("Enter -> Email Used ")
-      username = input("Enter -> Username ")
-      password = input("Enter -> Password ")
-       #profile_name = data.get("profile_name")
-     #new_data = [{
-      #          website: {
-       #          "email": email,
-        #         "username": username,
-         #        "password": password,
-          #     }
-           #}]
-    #new_data = {"website": website, "email": email, "username": username, "password": password}
-     #new_data = [{
-     #  {"website": website, "email": email, "username": username, "password": password}
-     #}]
-    unique_id = str(uuid.uuid4()) # This will create a unique ID for each password
-
-    new_data = [{"id": unique_id, "website": website, "email": email, "username": username, "password": password}] # This is the data set that grabs user data then appends it under it
-    data_list.append(new_data)
-         
-    with open(flie_location, "w") as f: # Writing the user data in storage - the file name of password storage
-     #f.write('\n')
-      json.dump(data_list, f, indent=4)
-      print(f"Thanks, {username}! Your Account Details (ID: {unique_id}) been saved")
-   else:
-       print("Error file path not found") 
-
-    
-
-  def remove_password(self, user_proflie, website, email, username, password):
-   self.clear_screen(cls="")
-   profile_json = f"password/proflie/{user_proflie}.json"
-   if os.path.exists(profile_json):
-    with open(profile_json, "r") as f:
-     data = json.load(f)
-    file_path = data.get("file_name")
-    print(file_path)
-    flie_location = f"password/storage/{file_path}.json"
-    print(flie_location)
-    if os.path.exists(flie_location):
-     with open(flie_location, 'r') as f:
-      data_list = json.load(f)
-      id_input = input("Enter -> ID ")
-      updated_list = [
-                inner_list for inner_list in data_list 
-                if inner_list[0].get('id') != id_input
-            ]
-    
-     #updated_list = [
-    #[entry for entry in inner_list if it.get('id') != filtered_results]
-    #for inner_list in data_list
-#]
-    if len(updated_list) < len(data_list):
-      with open(flie_location, "w") as f:
-        json.dump(updated_list, f, indent=4)
-      print(f"Success: Entry with ID {id_input} has been removed.")
-    else:
-      print("ID not found.")
+   def add_password(self, website, email, username, password, choice=""):
+    try:
+     while True:
+       profile_path = self.get_profile_path(choice) #
+       if not os.path.exists(profile_path):
+           print(f"Error: Profile {profile_path} not found.")
+           return
+       try:
+         while True:
+           with open(profile_path, "r") as file:
+                data = json.load(file)
+           file_name = data.get("file_name", "")
+           bank_file_path = os.path.join(self.bank, f"{file_name}.json")
+           if os.path.exists(bank_file_path) and file_name:
+            try:
+              while True:
+               with open(bank_file_path, "r") as file: 
+                data_list = json.load(file)
+               unique_id = str(uuid.uuid4()) # This will create a unique ID for each password
+               new_data = [{"id": unique_id, "website": website, "email": email, "username": username, "password": password}] # This is the data set that grabs user data then appends it under it
+               data_list.append(new_data) 
+               with open(bank_file_path, "w") as f: # Writing the user data in storage - the file name of password storage
+                json.dump(data_list, f, indent=4)
+               print(f"Thanks, {username}! Your Account Details (ID: {unique_id}) been saved")
+               return
+            except (json.JSONDecodeError, IOError) as e:
+             print(f"Error processing profile file: {e}")
+             break
+           else:
+            print(f"Error file path not found {profile_path}") 
+            break
+       except (json.JSONDecodeError, IOError) as e:
+         print(f"Error processing profile file: {e}")
+         break
+    except KeyboardInterrupt:
+      exit()
+        
        
+   #-----------------------------------#
 
-  def website_looks_up(self, user_proflie, website, email, username, password):
-   self.clear_screen(cls="")
-   profile_json = f"password/proflie/{user_proflie}.json"
-   if os.path.exists(profile_json):
-    with open(profile_json, "r") as f:
-     data = json.load(f)
-     file_path = data.get("file_name")
-   print(file_path)
-   flie_location = f"password/storage/{file_path}.json"
-   print(flie_location) 
-   if os.path.exists(flie_location):
-    with open(flie_location, "r") as f: 
-     data = json.load(f)
-     website_input = input("Enter -> Website Name ")
-     flat_data = [sub[0] for sub in data]
-     filtered_results = [
-        item for item in flat_data 
-        if item.get("website") == website_input   
-    ]   
-    keys = ["website", "email", "username", "password"]
-    display = [[item.get(k) for k in keys] for item in filtered_results]
-    print(display)
-    return display
-
-  def username_looks_up(self, user_proflie, website, email, username, password):
-    self.clear_screen(cls="")
-    profile_json = f"password/proflie/{user_proflie}.json"
-    if os.path.exists(profile_json):
-      with open(profile_json, "r") as f:
-       data = json.load(f)
-       file_path = data.get("file_name")
-    print(file_path)
-    flie_location = f"password/storage/{file_path}.json"
-    print(flie_location) 
-    if os.path.exists(flie_location):
-     with open(flie_location, "r") as f: 
-      data = json.load(f)
-      username_input = input("Enter -> Website Name ")
-     flat_data = [sub[0] for sub in data]
-     filtered_results = [
-        item for item in flat_data 
-        if item.get("username") == username_input   
-    ]
-    keys = ["website", "email", "username", "password"]
-    display = [[item.get(k) for k in keys] for item in filtered_results]
-    print(display)
-    return display  
-  def email_looks_up(self, user_proflie, website, email, username, password):
-     self.clear_screen(cls="")
-     profile_json = f"password/proflie/{user_proflie}.json"
-     if os.path.exists(profile_json):
-      with open(profile_json, "r") as f:
-       data = json.load(f)
-       file_path = data.get("file_name")
-     print(file_path)
-     flie_location = f"password/storage/{file_path}.json"
-     print(flie_location) 
-     if os.path.exists(flie_location):
-      with open(flie_location, "r") as f: 
-       data = json.load(f)
-      email_input = input("Enter -> Website Name ")
-     flat_data = [sub[0] for sub in data]
-     filtered_results = [
-        item for item in flat_data 
-        if item.get("email") == email_input   
-    ]
-     keys = ["website", "email", "username", "password"]
-     display = [[item.get(k) for k in keys] for item in filtered_results]
-     print(display)
-     return display  
-
-  def looking_up(self, user_proflie, website, email, username, password):
-   profile_json = f"password/proflie/{user_proflie}.json"
-   if os.path.exists(profile_json):
-    with open(profile_json, "r") as f:
-     data = json.load(f)
-     file_path = data.get("file_name")
-    print(file_path)
-    flie_location = f"password/storage/{file_path}.json"
-    print(flie_location) 
-    if os.path.exists(flie_location):
-     with open(flie_location, "r") as f: 
-      print("---- Choose Your Option ----")
-      print("1:) Website Looks up? ")
-      print("2:) Username looks up? ")
-      print("3:) Email looks up? ")
-      while True:
-       try:
-           raw_input = input("Enter -> Choose Your Option: ").strip()
-           choice = int(raw_input) if raw_input.isdigit() else 0  
-           while choice == "": 
-            raw_input = input("Enter -> Choose Your Option: ").strip()
-            choice = int(raw_input) if raw_input.isdigit() else 0
-           if choice >= 4:
-             print("Too hight")
-           if choice <= 1:
-             print("Too low")
-           if choice == 1:
-             self.website_looks_up(user_proflie=user_proflie, website="", email="", username="", password="")
-           if choice == 2:
-             self.username_looks_up(user_proflie=user_proflie, website="", email="", username="", password="")
-           if choice == 3:
-             self.email_looks_up(user_proflie=user_proflie, website="", email="", username="", password="")
-       except KeyboardInterrupt:
-        # Handles Ctrl+C gracefully
-        print("\nProgram interrupted by user.")
-        break
-  def display_all(self, user_proflie, website, email, username, password):
-   self.clear_screen(cls="")
-   profile_json = f"password/proflie/{user_proflie}.json"
-   if os.path.exists(profile_json):
-    with open(profile_json, "r") as f:
-     data = json.load(f)
-     file_path = data.get("file_name")
-     print(file_path)
-     flie_location = f"password/storage/{file_path}.json"
-     print(flie_location)
-    if os.path.exists(flie_location):
-     with open(flie_location, "r") as f:  
-      data = json.load(f)
-      #print(f"DEBUG: data type is {type(data)} and value is {data}")
-      keys = ["website", "email", "username", "password"]
-      display = [sub[0].get(k) for sub in data for k in keys]
-      print(display)
-     
-  path = "password/proflie"
-  contents = os.listdir(path)
-  print("Directory contents:", contents)
-
-  def login(self, user_proflie, password):
-   os.makedirs("password/proflie", exist_ok=True) 
-   print("---------------")
-   user_proflie = input("Enter -> Proflie Name ")
-   print("---------------")
-   master_password = input("Enter -> Master Password ")
-   profile_json = f"password/proflie/{user_proflie}.json"
-   if os.path.exists(profile_json):
-    with open(profile_json, "r") as f:
-      data = json.load(f)
-      username = data.get("username", "")
-      if master_password == data.get("master"):
-       profile_name = data.get("profile_name")
-       self.clear_screen(cls="")
-       print(f"Hello {profile_name} Welcome Back <𝟑 .ᐟ")
-       print("--------- Choose Your Option ---------")
-       print("1:) Add a Password? ")
-       print("2:) Remove a Password? ")
-       print("3:) Display all Password ")
-       print("4:) Looks Up ")
-      while True:
-       try:
-          raw_input = input("Enter -> Choose Your Option: ").strip()
-          choice = int(raw_input) if raw_input.isdigit() else 0  
-          while choice == "": 
-           raw_input = input("Enter -> Choose Your Option: ").strip()
-           choice = int(raw_input) if raw_input.isdigit() else 0
-          if choice >= 4:
-           print("Too hight")
-          if choice <= 1:
-           print("Too low")
-          if choice == 1:
-           self.add_password(user_proflie=user_proflie, website="", email="", username="", password="")
-          if choice == 2:
-           self.remove_password(user_proflie=user_proflie, website="", email="", username="", password="")
-          if choice == 3:
-           self.display_all(user_proflie=user_proflie, website="", email="", username="", password="")
-          if choice == 4:
-           self.looking_up(user_proflie=user_proflie, website="", email="", username="", password="")
-       except KeyboardInterrupt:
-        # Handles Ctrl+C gracefully
-        print("\nProgram interrupted by user.")
-        break
-   else:
-     print("g")
-     profile_name = input("Enter -> The name you want us to call you ")
-     while profile_name == "": #Simple check to make sure username is not empty because it just be weird 
-      print("It seems that your username was empty please re-enter it!")
-      profile_name = input("Enter -> The name you want us to call you ")
-     username = input("Enter your username: ")
-     while username == "": #Simple check to make sure username is not empty because it just be weird 
-      print("It seems that your username was empty please re-enter it!")
+   def make_profile(self):
+    try:
+     while True:
+      print("Please enter your profile name")
+      profile_name = input("Enter: ")
+      while profile_name == "": #Simple check to make sure username is not empty because it just be weird 
+        print("Please enter your profile name")
+        profile_name = input("Enter: ")
+      print("Please pick or make a Username")
       username = input("Enter your username: ")
-     password = input("Enter your password: ")
-     while password == "": #Simple check to make sure username is not empty because it just be weird 
-      print("It seems that your password was empty please re-enter it!")
-     password = input("Enter your password: ")
-     file_name = input("Enter your file name for your password: ")
-     while password == "": #Simple check to make sure username is not empty because it just be weird 
-      print("It seems that your file name for your password was empty please re-enter it!")
+      while username == "": #Simple check to make sure username is not empty because it just be weird   
+         print("Please pick or make a Username")
+         username = input("Enter your username: ")
+      print("Make Password with 4-30 characters one special character is required")
+      password = input("Enter your password: ")
+      while password == "":
+         print("Make Password with 4-30 characters one special character is required")
+         password = input("Enter your password: ")
+      password_hash = hashlib.sha256(f"{password}".encode()).hexdigest()  
+      print("Make Password with 4-30 characters one special character is required")
       file_name = input("Enter your file name for your password: ")
-     with open(profile_json, "w") as f: # Creates the username.json and ready to writes the username into it 
-      json.dump({"profile_name": profile_name, "master": master_password, "username": username, "password": password, "file_name": file_name}, f, indent=4) # Dumps the username into the json file
-     empty_data = []
-     filename = f"password/storage/{file_name}.json"
-     with open(filename, 'w') as f_obj:
-      json.dump(empty_data, f_obj)           
-     print(f"Thanks, {username}! Your username has been saved")
-     print(f"Created empty JSON file: {filename}")
+      while password == "": #Simple check to make sure username is not empty because it just be weird 
+        print("It seems that your file name for your password was empty please re-enter it!")
+        file_name = input("Enter your file name for your password: ")
+      with open(self.dir/f"{profile_name}.json", "w") as f: # Creates the username.json and ready to writes the username into it 
+       json.dump({"profile_name": profile_name, "username": username, "password_hash": password_hash, "file_name": file_name}, f, indent=4) # Dumps the username into the json file
+       empty_data = []
+       filename = f"{self.bank}/{file_name}.json"
+       with open(filename, 'w') as f_obj:
+        json.dump(empty_data, f_obj)           
+        print(f"Thanks, {username}! Your username has been saved")
+        print(f"Created empty JSON file: {filename}") 
+    except KeyboardInterrupt:
+      exit()
+   def remove_profile(self):
+      print("Please enter the profile name you want to remove")
+      try:
+        while True:
+          profile_name = input("Enter: ")
+          profile_path = os.path.join(self.dir, f"{profile_name}.json")
+          if os.path.exists(profile_path):
+           try:
+            while True:
+             with open(profile_path, "r") as file:
+                   data = json.load(file)
+             file_name = data.get("file_name", "")
+             bank_file_path = os.path.join(self.bank, f"{file_name}.json")
+             if os.path.exists(bank_file_path) and file_name:
+                     os.remove(bank_file_path)
+             os.remove(profile_path)
+             print(f"Successfully removed profile: {profile_name}")
+             break 
+           except (json.JSONDecodeError, IOError) as e:
+            print(f"Error processing profile file: {e}")
+          else:    
+            print(f"Path not found: {profile_name}")
+      except KeyboardInterrupt:
+        exit()
+    
+      
+class UserSession:
+
+    def __init__(self):
+        
+        self.subfunctions = functions()
+        self.dir = Path("profile")
+        self.dir.mkdir(parents=True, exist_ok=True)
+        self.username = self.load_user()
+        self.options = {
+        "Make Profile": "create",
+        "Remove Profile": "delete",
+        "Exit": "exit"
+       }
+        self.menu_options = {
+        "Add Password": "create",
+        "Remove Password": "delete",
+        "Exit": "exit"
+       }
+        self.choice = ""  # Define it first
 
 
-  def save_user(proflie):
-   profile_json = f"{username}.json"
-   if os.path.exists(profile_json):
-    with open(profile_json, "r") as f:
-     data = json.load(f)
-     username = data.get("username", "")
 
-if __name__ == "__main__":
-    app = ApplicationCore()
+    def list_profiles_and_options(self):
+        return (
+           [f.name for f in self.dir.iterdir()],
+           [key for key, value in self.options.items()]
+        )  
+        
+    def get_profile_path(self, choice):
+        return os.path.join(self.dir, f"{choice}.json")
 
-    app.login(user_proflie="", password="")
+    def login(self, choice):
+        print("---- User Session Login ----")
+        #print(f"Available profiles: {', '.join(self.list_profiles_and_options())}")
+        profiles, options = self.list_profiles_and_options()
+        for i, name  in enumerate(profiles, start=1):
+          print(f"{i}. {name}")
+        print("---- ----------- ----")
+        for i, opt in enumerate(options, start=1):
+          print(f"{i}. {opt}")
+        try:
+         while True:
+            choice = input("--> ")
+            if not choice.isdigit():
+
+
+             if not choice.endswith('.json'):
+               choice += '.json'
+
+             filename = choice if choice.endswith('.json') else f"{choice}.json"
+            
+             if filename in profiles:
+           
+                      print("---- ----- Verification ----- ----")
+                      password = input("Password: ")
+                      with open(f"profile/{choice}", "r") as file:
+                       data = json.load(file)
+                       hash = hashlib.sha256(password.encode()).hexdigest()
+                       if hash == data.get("password_hash"):
+                        print(style.bold_style(color.rgb_text(0, 255, 0, " Login Successful! ")))
+                        self.load_user(choice=choice)
+                        self.main_menu(choice=choice)
+                        return True
+                       else:
+                        print(style.bold_style(color.rgb_text(255, 0, 0,  " Invalid Password. ")))
+                        return False
+            #---------------------------------------------------------------------------------#
+            elif choice.isdigit():
+              idx = int(choice) - 1  # Convert "1" to index 0
+
+              if 0 <= idx < len(options):
+                selected_text = options[idx]
+                print(f"Selected: {selected_text}")
+
+                    # 2. Logic based on what was selected
+                if selected_text == "Make Profile":
+                  self.subfunctions.make_profile()
+                  break
+                elif selected_text == "Remove Profile":
+                  self.subfunctions.remove_profile()
+                  break
+                elif selected_text == "Exit":
+                 exit()
+                else:
+                 print(f"Logic for {selected_text} not implemented yet.")
+              else:
+                print(style.bold_style(color.rgb_text(255, 0, 0, "Number out of range.")))
+            else:
+                print(style.bold_style(color.rgb_text(255, 0, 0, "Please enter a valid number.")))
+        except KeyboardInterrupt: 
+            exit()    
+
+    def load_user(self, choice=""): # This method checks if the username.json file exists. If it does, it reads the file and loads the username from it. If the file does not exist, it prompts the user to enter a username, validates that it's not empty, and then saves it to username.json for future use. The method returns the username, which is stored in the instance variable self.username.
+      if not choice:
+         self.username = "Unknown"
+         return self.username
+      
+      filepath = self.dir / choice
+
+      if filepath.exists() and filepath.is_file():
+         try:
+               with open(filepath, "r") as file:
+                  data = json.load(file)
+                  self.username = data.get("username", "User")
+                  print(f"Loaded user from: {filepath}")
+                  self.main_menu()
+         except (json.JSONDecodeError, PermissionError) as e:
+            print(f"Error loading profile: {e}")
+            self.username = "User"
+      else:
+        self.username = "Guest"  
+
+      return self.username and exit()
+          
+
+    def main_menu_options(self):
+       return(
+       [key for key, value in self.menu_options.items()]
+       )
+    
+    def main_menu(self, choice=""):
+      print(f"{self.username}")
+      print("---- ----- Menu ----- ----")
+      options = self.main_menu_options()
+      for key, value in enumerate(options, start=1):
+          print(f"{key}. {value}")
+      print("---- ----- Menu ----- ----")
+      try:
+         while True:   
+          selection = input("Enter number: ")
+
+            # 1. Validate if the input is a number and within range
+          if selection.isdigit():
+            idx = int(selection) - 1  # Convert "1" to index 0
+
+            if 0 <= idx < len(options):
+               selected_text = options[idx]
+               print(f"Selected: {selected_text}")
+
+                    # 2. Logic based on what was selected
+               if selected_text == "Add Password":
+                  website = input("Enter -> Website Name ")
+                  email = input("Enter -> Email Used ")
+                  username = input("Enter -> Username ")
+                  password = input("Enter -> Password ")
+                  try:
+                   self.subfunctions.add_password(website, email, username, password, choice=choice)
+                  except TimeoutError:
+                    break
+               elif selected_text == "Remove Profile":
+                  self.subfunctions.remove_profile()
+                  break
+               elif selected_text == "Exit":
+                exit()
+               else:
+                print(f"Logic for {selected_text} not implemented yet.")
+            else:
+              print(style.bold_style(color.rgb_text(255, 0, 0, "Number out of range.")))
+         else:
+          print(style.bold_style(color.rgb_text(255, 0, 0, "Please enter a valid number.")))
+
+      except KeyboardInterrupt:
+        print("\nExiting...")
+        exit()
+    
+    
+              
+
+
+if __name__ == "__main__": 
+    usersession = UserSession()
+    usersession.login(choice="")
+    subfunctions = functions
+    subfunctions.add_password(choice="")
+    
