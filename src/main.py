@@ -19,12 +19,14 @@ class functions:
      self.bank = Path("storage")
      self.bank.mkdir(parents=True, exist_ok=True)
 
-   def add_password(self, choice, website, email, username, password):
+   def add_password(self, website, email, username, password, choice=""):
     try:
      while True:
-       profile_path = os.path.join(self.dir, f"{choice}.json") #
-       if os.path.exists(profile_path):
-        try:
+       profile_path = self.get_profile_path(choice) #
+       if not os.path.exists(profile_path):
+           print(f"Error: Profile {profile_path} not found.")
+           return
+       try:
          while True:
            with open(profile_path, "r") as file:
                 data = json.load(file)
@@ -41,14 +43,14 @@ class functions:
                with open(bank_file_path, "w") as f: # Writing the user data in storage - the file name of password storage
                 json.dump(data_list, f, indent=4)
                print(f"Thanks, {username}! Your Account Details (ID: {unique_id}) been saved")
-          
+               return
             except (json.JSONDecodeError, IOError) as e:
              print(f"Error processing profile file: {e}")
              break
            else:
-            print(f"Error file path not found {bank_file_path}") 
+            print(f"Error file path not found {profile_path}") 
             break
-        except (json.JSONDecodeError, IOError) as e:
+       except (json.JSONDecodeError, IOError) as e:
          print(f"Error processing profile file: {e}")
          break
     except KeyboardInterrupt:
@@ -135,6 +137,8 @@ class UserSession:
         "Remove Password": "delete",
         "Exit": "exit"
        }
+        self.choice = ""  # Define it first
+
 
 
     def list_profiles_and_options(self):
@@ -143,6 +147,8 @@ class UserSession:
            [key for key, value in self.options.items()]
         )  
         
+    def get_profile_path(self, choice):
+        return os.path.join(self.dir, f"{choice}.json")
 
     def login(self, choice):
         print("---- User Session Login ----")
@@ -258,8 +264,10 @@ class UserSession:
                   email = input("Enter -> Email Used ")
                   username = input("Enter -> Username ")
                   password = input("Enter -> Password ")
-                  self.subfunctions.add_password(website, email, username, password, choice)
-                  break
+                  try:
+                   self.subfunctions.add_password(website, email, username, password, choice=choice)
+                  except TimeoutError:
+                    break
                elif selected_text == "Remove Profile":
                   self.subfunctions.remove_profile()
                   break
@@ -283,4 +291,6 @@ class UserSession:
 if __name__ == "__main__": 
     usersession = UserSession()
     usersession.login(choice="")
+    subfunctions = functions
+    subfunctions.add_password(choice="")
     
