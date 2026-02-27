@@ -57,7 +57,32 @@ class functions:
         print(f"Created empty JSON file: {filename}") 
     except KeyboardInterrupt:
       exit()
-
+   def remove_profile(self):
+      print("Please enter the profile name you want to remove")
+      try:
+        while True:
+          profile_name = input("Enter: ")
+          profile_path = os.path.join(self.dir, f"{profile_name}.json")
+          if os.path.exists(profile_path):
+           try:
+            while True:
+             with open(profile_path, "r") as file:
+                   data = json.load(file)
+             file_name = data.get("file_name", "")
+             bank_file_path = os.path.join(self.bank, f"{file_name}.json")
+             if os.path.exists(bank_file_path) and file_name:
+                     os.remove(bank_file_path)
+             os.remove(profile_path)
+             print(f"Successfully removed profile: {profile_name}")
+             break 
+           except (json.JSONDecodeError, IOError) as e:
+            print(f"Error processing profile file: {e}")
+          else:    
+            print(f"Path not found: {profile_name}")
+      except KeyboardInterrupt:
+        exit()
+    
+      
 class UserSession:
 
     def __init__(self):
@@ -131,6 +156,9 @@ class UserSession:
                 if selected_text == "Make Profile":
                   self.subfunctions.make_profile()
                   break
+                elif selected_text == "Remove Profile":
+                  self.subfunctions.remove_profile()
+                  break
                 elif selected_text == "Exit":
                  exit()
                 else:
@@ -192,6 +220,9 @@ class UserSession:
                     # 2. Logic based on what was selected
                if selected_text == "Make Profile":
                   self.subfunctions.add_password()
+                  break
+               elif selected_text == "Remove Profile":
+                  self.subfunctions.remove_profile()
                   break
                elif selected_text == "Exit":
                 exit()
