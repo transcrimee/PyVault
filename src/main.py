@@ -19,8 +19,42 @@ class functions:
      self.bank = Path("storage")
      self.bank.mkdir(parents=True, exist_ok=True)
 
-   def add_password(self):
-      print("test1234")
+   def add_password(self, choice, website, email, username, password):
+    try:
+     while True:
+       profile_path = os.path.join(self.dir, f"{choice}.json") #
+       if os.path.exists(profile_path):
+        try:
+         while True:
+           with open(profile_path, "r") as file:
+                data = json.load(file)
+           file_name = data.get("file_name", "")
+           bank_file_path = os.path.join(self.bank, f"{file_name}.json")
+           if os.path.exists(bank_file_path) and file_name:
+            try:
+              while True:
+               with open(bank_file_path, "r") as file: 
+                data_list = json.load(file)
+               unique_id = str(uuid.uuid4()) # This will create a unique ID for each password
+               new_data = [{"id": unique_id, "website": website, "email": email, "username": username, "password": password}] # This is the data set that grabs user data then appends it under it
+               data_list.append(new_data) 
+               with open(bank_file_path, "w") as f: # Writing the user data in storage - the file name of password storage
+                json.dump(data_list, f, indent=4)
+               print(f"Thanks, {username}! Your Account Details (ID: {unique_id}) been saved")
+          
+            except (json.JSONDecodeError, IOError) as e:
+             print(f"Error processing profile file: {e}")
+             break
+           else:
+            print(f"Error file path not found {bank_file_path}") 
+            break
+        except (json.JSONDecodeError, IOError) as e:
+         print(f"Error processing profile file: {e}")
+         break
+    except KeyboardInterrupt:
+      exit()
+        
+       
    #-----------------------------------#
 
    def make_profile(self):
@@ -48,7 +82,7 @@ class functions:
         print("It seems that your file name for your password was empty please re-enter it!")
         file_name = input("Enter your file name for your password: ")
       with open(self.dir/f"{profile_name}.json", "w") as f: # Creates the username.json and ready to writes the username into it 
-       json.dump({"profile_name": profile_name, "username": username, "hash": password_hash, "file_name": file_name}, f, indent=4) # Dumps the username into the json file
+       json.dump({"profile_name": profile_name, "username": username, "password_hash": password_hash, "file_name": file_name}, f, indent=4) # Dumps the username into the json file
        empty_data = []
        filename = f"{self.bank}/{file_name}.json"
        with open(filename, 'w') as f_obj:
@@ -86,6 +120,7 @@ class functions:
 class UserSession:
 
     def __init__(self):
+        
         self.subfunctions = functions()
         self.dir = Path("profile")
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -96,8 +131,8 @@ class UserSession:
         "Exit": "exit"
        }
         self.menu_options = {
-        "Make Profile": "create",
-        "Remove Profile": "delete",
+        "Add Password": "create",
+        "Remove Password": "delete",
         "Exit": "exit"
        }
 
@@ -218,8 +253,12 @@ class UserSession:
                print(f"Selected: {selected_text}")
 
                     # 2. Logic based on what was selected
-               if selected_text == "Make Profile":
-                  self.subfunctions.add_password()
+               if selected_text == "Add Password":
+                  website = input("Enter -> Website Name ")
+                  email = input("Enter -> Email Used ")
+                  username = input("Enter -> Username ")
+                  password = input("Enter -> Password ")
+                  self.subfunctions.add_password(website, email, username, password, choice)
                   break
                elif selected_text == "Remove Profile":
                   self.subfunctions.remove_profile()
