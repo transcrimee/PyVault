@@ -96,7 +96,25 @@ class functions:
       print(f"Success: Entry with ID {id_input} has been removed.")
     else:
       print("ID not found.")    
-       
+
+ 
+   def display_all(self, choice=""):
+     profile_path = os.path.join(self.dir, f"{choice}.json")
+     if os.path.exists(profile_path):
+      with open(profile_path, "r") as f:
+       data = json.load(f)
+      file_name = data.get("file_name")
+      print(file_name)
+      bank_file_path = os.path.join(self.bank, f"{file_name}.json")
+      print(bank_file_path)
+      if os.path.exists(bank_file_path):
+       with open(bank_file_path, "r") as f:  
+        data = json.load(f)
+      keys = ["website", "email", "username", "password"]
+      display = [sub[0].get(k) for sub in data for k in keys]
+      print(display)
+        
+
    #-----------------------------------#
 
    def make_profile(self):
@@ -158,8 +176,7 @@ class functions:
       except KeyboardInterrupt:
         exit()
 
- 
-      
+
 class UserSession:
 
     def __init__(self,  input_data: UserInput):
@@ -176,6 +193,7 @@ class UserSession:
         self.menu_options = {
         "Add Password": "create",
         "Remove Password": "delete",
+        "Display ALL!!": "display",
         "Exit": "exit"
        }
         self.choice = ""
@@ -325,6 +343,8 @@ class UserSession:
                    self.subfunctions.remove_password(id_input, self.choice)
                   except TimeoutError:
                    break
+               elif  selected_text == "Display ALL!":
+                   self.subfunctions.display_all(website, email, username, password, self.choice)
                elif selected_text == "Exit":
                 exit()
                else:
