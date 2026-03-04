@@ -11,6 +11,24 @@ import hashlib
 from pathlib import Path
 from stylelibrary import color
 from stylelibrary import style
+import logging
+
+logging.basicConfig(filename="application .log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+
+class UserInput:
+    def __init__(self):
+        self.choice = ""
+
+    def get_choice(self):
+        return input("--> ")
+  
+class UserProfile:
+    def __init__(self):
+        self.choice = ""
+       
+
+    def update_from_input(self, user_input: UserInput):
+        self.choice = user_input.choice
 
 class UserInput:
     def __init__(self):
@@ -21,23 +39,24 @@ class UserInput:
 
 class functions:
    def __init__(self, data):
+     self.logger = logging.getLogger(f"{__name__}.RepoManager")
      self.dir = Path("profile")
      self.dir.mkdir(parents=True, exist_ok=True)
      self.bank = Path("storage")
      self.bank.mkdir(parents=True, exist_ok=True)
      self.data = data
-     
 
    def add_password(self, website, email, username, password, choice=""):
     try:
      while True:
-       profile_path = self.get_profile_path(choice) #
-       if not os.path.exists(profile_path):
-           print(f"Error: Profile {profile_path} not found.")
+       print(choice)
+       path = os.path.join(self.dir, f"{choice}")
+       if not os.path.exists(path):
+           print(f"Error: Profile {path} not found.")
            return
        try:
          while True:
-           with open(profile_path, "r") as file:
+           with open(path, "r") as file:
                 data = json.load(file)
            file_name = data.get("file_name", "")
            bank_file_path = os.path.join(self.bank, f"{file_name}.json")
@@ -55,17 +74,65 @@ class functions:
                return
             except (json.JSONDecodeError, IOError) as e:
              print(f"Error processing profile file: {e}")
+             self.logger.critical(f"Error processing profile file: {type(e).__name__}", exc_info=True)
              break
            else:
-            print(f"Error file path not found {profile_path}") 
+            print(f"Error file path not found: {path}")
+            self.logger.critical(f"Error could not find the file path: {type(e).__name__}", exc_info=True) 
             break
        except (json.JSONDecodeError, IOError) as e:
          print(f"Error processing profile file: {e}")
+         self.logger.critical(f"Error processing profile file: {type(e).__name__}", exc_info=True)
          break
     except KeyboardInterrupt:
       exit()
+
+   def remove_password(self, id_input, choice=""):
+    path = os.path.join(self.dir, f"{choice}")
+    if not os.path.exists(path):
+      print(f"Error: Profile {path} not found.")      
+      self.logger.critical(f"Profile was not found: {path}")
+      return
+    with open(path, "r") as f:
+     data = json.load(f)
+    file_name = data.get("file_name")
+    bank_file_path = os.path.join(self.bank, f"{file_name}.json")
+    print(bank_file_path)
+    if os.path.exists(bank_file_path):
+     with open(bank_file_path, 'r') as f:
+      data_list = json.load(f)
+      updated_list = [
+                inner_list for inner_list in data_list 
+                if inner_list[0].get('id') != id_input
+            ]
+     if len(updated_list) < len(data_list):
+      with open(bank_file_path, "w") as f:
+        json.dump(updated_list, f, indent=4)
+      print(f"Success: Entry with ID {id_input} has been removed.")
+      self.logger.info(f"Success with removing {id_input}")
+    else:
+      print("ID not found.")
+      self.logger.warning("User ID could not be found :(")
+    
+
+ 
+   def display_all(self, choice=""):
+     profile_path = os.path.join(self.dir, f"{choice}.json")
+     if os.path.exists(profile_path):
+      with open(profile_path, "r") as f:
+       data = json.load(f)
+      file_name = data.get("file_name")
+      print(file_name)
+      bank_file_path = os.path.join(self.bank, f"{file_name}.json")
+      print(bank_file_path)
+      if os.path.exists(bank_file_path):
+       with open(bank_file_path, "r") as f:  
+        data = json.load(f)
+      keys = ["website", "email", "username", "password"]
+      display = [sub[0].get(k) for sub in data for k in keys]
+      print(display)
         
-       
+
    #-----------------------------------#
 
    def make_profile(self):
@@ -122,24 +189,17 @@ class functions:
              break 
            except (json.JSONDecodeError, IOError) as e:
             print(f"Error processing profile file: {e}")
+
           else:    
             print(f"Path not found: {profile_name}")
       except KeyboardInterrupt:
         exit()
-    
-class UserProfile:
-    def __init__(self):
-        self.choice = ""
-       
 
-    def update_from_input(self, user_input: UserInput):
-        self.choice = user_input.choice
-      
- 
-      
+
 class UserSession:
 
     def __init__(self,  input_data: UserInput):
+        self.logger = logging.getLogger(f"{__name__}.RepoManager")
         self.input_data = input_data
         self.subfunctions = functions(data="")
         self.dir = Path("profile")
@@ -153,15 +213,18 @@ class UserSession:
         self.menu_options = {
         "Add Password": "create",
         "Remove Password": "delete",
+        "Display ALL!!": "display",
         "Exit": "exit"
        }
-        self.choice
+        self.choice = ""
         
     
     def update_from_input(self, user_input: UserInput):
         self.choice = user_input.choice
        
 
+    def get_profile_path(self, choice):
+        return os.path.join(self.dir, f"{choice}.json")
 
 
     def list_profiles_and_options(self):
@@ -191,29 +254,37 @@ class UserSession:
 
             if not self.choice.isdigit():
   
-              if not choice.endswith('.json'):
-                choice += '.json'
+              if not self.choice.endswith('.json'):
+                self.choice += '.json'
 
-              filename = choice if choice.endswith('.json') else f"{choice}.json"
+              filename = self.choice if self.choice.endswith('.json') else f"{self.choice}.json"
             
               if filename in profiles:
            
                       print("---- ----- Verification ----- ----")
-                      password = input("Password: ")
-                      with open(f"profile/{choice}", "r") as file:
-                       data = json.load(file)
-                       hash = hashlib.sha256(password.encode()).hexdigest()
-                       if hash == data.get("password_hash"):
-                        print(style.bold_style(color.rgb_text(0, 255, 0, " Login Successful! ")))
-                        self.load_user(choice=choice)
-                        self.main_menu(choice=choice)
-                        return True
-                       else:
-                        print(style.bold_style(color.rgb_text(255, 0, 0,  " Invalid Password. ")))
-                        return False
+                      try:
+                        while True:
+                         password = input("Password: ")
+                         with open(f"profile/{filename}", "r") as file:
+                          data = json.load(file)
+                         hash = hashlib.sha256(password.encode()).hexdigest()
+                         if hash == data.get("password_hash"):
+                          print(style.bold_style(color.rgb_text(0, 255, 0, " Login Successful! ")))
+                          self.logger.info(f"User Login Successful! as {filename}")
+
+                          self.load_user(choice=self.choice)
+                          self.main_menu(choice=self.choice)
+                          return True
+                         else:
+                          print(style.bold_style(color.rgb_text(255, 0, 0,  " Invalid Password. ")))
+                          self.logger.info(f"User could not Login Successful! as {filename} because of Invalid Password.")
+                          return False
+                      except TypeError:
+                        print("TypeError: most likey because of Invalid Password.")
+    
             #---------------------------------------------------------------------------------#
-            elif choice.isdigit():
-              idx = int(choice) - 1  # Convert "1" to index 0
+            elif self.choice.isdigit():
+              idx = int(self.choice) - 1  # Convert "1" to index 0
 
               if 0 <= idx < len(options):
                 selected_text = options[idx]
@@ -235,7 +306,8 @@ class UserSession:
             else:
                 print(style.bold_style(color.rgb_text(255, 0, 0, "Please enter a valid number.")))
         except KeyboardInterrupt: 
-            exit()    
+            exit()  
+          
 
     def load_user(self, choice=""): # This method checks if the username.json file exists. If it does, it reads the file and loads the username from it. If the file does not exist, it prompts the user to enter a username, validates that it's not empty, and then saves it to username.json for future use. The method returns the username, which is stored in the instance variable self.username.
       if not choice:
@@ -291,12 +363,15 @@ class UserSession:
                   username = input("Enter -> Username ")
                   password = input("Enter -> Password ")
                   try:
-                   self.subfunctions.add_password(website, email, username, password, choice=choice,)
+                   self.subfunctions.add_password(website, email, username, password, self.choice)
                   except TimeoutError:
                     break
-               elif selected_text == "Remove Profile":
-                  self.subfunctions.remove_profile()
-                  break
+               elif selected_text == "Remove Password":
+                  id_input = input("Enter -> ID ")
+                  self.subfunctions.remove_password(id_input, self.choice)
+                  
+               elif  selected_text == "Display ALL!":
+                   self.subfunctions.display_all(website, email, username, password, self.choice)
                elif selected_text == "Exit":
                 exit()
                else:
@@ -308,16 +383,11 @@ class UserSession:
 
       except KeyboardInterrupt:
         print("\nExiting...")
-        exit()
-    
-    
-              
-
-
+        exit()          
+        
 if __name__ == "__main__": 
     input_data = UserInput()  # Create an instance of UserInput
-    usersession = UserSession()  # Pass the instance to UserSession
+    usersession = UserSession(input_data)  # Pass the instance to UserSession
     usersession.login(input_data)
     subfunctions = functions
-    subfunctions.add_password(choice="")
-    
+    subfunctions.add_password(website="", email="", username="", password="", input_data="")
