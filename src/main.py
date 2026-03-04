@@ -361,10 +361,8 @@ class UserSession:
                     break
                elif selected_text == "Remove Password":
                   id_input = input("Enter -> ID ")
-                  try:
-                   self.subfunctions.remove_password(id_input, self.choice)
-                  except TimeoutError:
-                   break
+                  self.subfunctions.remove_password(id_input, self.choice)
+                  
                elif  selected_text == "Display ALL!":
                    self.subfunctions.display_all(website, email, username, password, self.choice)
                elif selected_text == "Exit":
