@@ -11,6 +11,9 @@ import hashlib
 from pathlib import Path
 from stylelibrary import color
 from stylelibrary import style
+import logging
+
+logging.basicConfig(filename="application .log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class UserInput:
     def __init__(self):
@@ -29,6 +32,7 @@ class UserProfile:
 
 class functions:
    def __init__(self, data):
+     self.logger = logging.getLogger(f"{__name__}.RepoManager")
      self.dir = Path("profile")
      self.dir.mkdir(parents=True, exist_ok=True)
      self.bank = Path("storage")
@@ -63,12 +67,15 @@ class functions:
                return
             except (json.JSONDecodeError, IOError) as e:
              print(f"Error processing profile file: {e}")
+             self.logger.critical(f"Error processing profile file: {type(e).__name__}", exc_info=True)
              break
            else:
-            print(f"Error file path not found {path}") 
+            print(f"Error file path not found: {path}")
+            self.logger.critical(f"Error could not find the file path: {type(e).__name__}", exc_info=True) 
             break
        except (json.JSONDecodeError, IOError) as e:
          print(f"Error processing profile file: {e}")
+         self.logger.critical(f"Error processing profile file: {type(e).__name__}", exc_info=True)
          break
     except KeyboardInterrupt:
       exit()
@@ -76,7 +83,8 @@ class functions:
    def remove_password(self, id_input, choice=""):
     path = os.path.join(self.dir, f"{choice}")
     if not os.path.exists(path):
-      print(f"Error: Profile {path} not found.")
+      print(f"Error: Profile {path} not found.")      
+      self.logger.critical(f"Profile was not found: {path}")
       return
     with open(path, "r") as f:
      data = json.load(f)
@@ -94,8 +102,11 @@ class functions:
       with open(bank_file_path, "w") as f:
         json.dump(updated_list, f, indent=4)
       print(f"Success: Entry with ID {id_input} has been removed.")
+      self.logger.info(f"Success with removing {id_input}")
     else:
-      print("ID not found.")    
+      print("ID not found.")
+      self.logger.warning("User ID could not be found :(")
+    
 
  
    def display_all(self, choice=""):
@@ -171,6 +182,7 @@ class functions:
              break 
            except (json.JSONDecodeError, IOError) as e:
             print(f"Error processing profile file: {e}")
+
           else:    
             print(f"Path not found: {profile_name}")
       except KeyboardInterrupt:
@@ -180,6 +192,7 @@ class functions:
 class UserSession:
 
     def __init__(self,  input_data: UserInput):
+        self.logger = logging.getLogger(f"{__name__}.RepoManager")
         self.input_data = input_data
         self.subfunctions = functions(data="")
         self.dir = Path("profile")
@@ -242,18 +255,26 @@ class UserSession:
               if filename in profiles:
            
                       print("---- ----- Verification ----- ----")
-                      password = input("Password: ")
-                      with open(f"profile/{filename}", "r") as file:
-                       data = json.load(file)
-                       hash = hashlib.sha256(password.encode()).hexdigest()
-                       if hash == data.get("password_hash"):
-                        print(style.bold_style(color.rgb_text(0, 255, 0, " Login Successful! ")))
-                        self.load_user(choice=self.choice)
-                        self.main_menu(choice=self.choice)
-                        return True
-                       else:
-                        print(style.bold_style(color.rgb_text(255, 0, 0,  " Invalid Password. ")))
-                        return False
+                      try:
+                        while True:
+                         password = input("Password: ")
+                         with open(f"profile/{filename}", "r") as file:
+                          data = json.load(file)
+                         hash = hashlib.sha256(password.encode()).hexdigest()
+                         if hash == data.get("password_hash"):
+                          print(style.bold_style(color.rgb_text(0, 255, 0, " Login Successful! ")))
+                          self.logger.info(f"User Login Successful! as {filename}")
+
+                          self.load_user(choice=self.choice)
+                          self.main_menu(choice=self.choice)
+                          return True
+                         else:
+                          print(style.bold_style(color.rgb_text(255, 0, 0,  " Invalid Password. ")))
+                          self.logger.info(f"User could not Login Successful! as {filename} because of Invalid Password.")
+                          return False
+                      except TypeError:
+                        print("TypeError: most likey because of Invalid Password.")
+    
             #---------------------------------------------------------------------------------#
             elif self.choice.isdigit():
               idx = int(self.choice) - 1  # Convert "1" to index 0
@@ -278,7 +299,8 @@ class UserSession:
             else:
                 print(style.bold_style(color.rgb_text(255, 0, 0, "Please enter a valid number.")))
         except KeyboardInterrupt: 
-            exit()    
+            exit()  
+          
 
     def load_user(self, choice=""): # This method checks if the username.json file exists. If it does, it reads the file and loads the username from it. If the file does not exist, it prompts the user to enter a username, validates that it's not empty, and then saves it to username.json for future use. The method returns the username, which is stored in the instance variable self.username.
       if not choice:
