@@ -30,6 +30,13 @@ class UserProfile:
     def update_from_input(self, user_input: UserInput):
         self.choice = user_input.choice
 
+class UserInput:
+    def __init__(self):
+        self.choice = ""
+
+    def get_choice(self):
+        return input("--> ")
+
 class functions:
    def __init__(self, data):
      self.logger = logging.getLogger(f"{__name__}.RepoManager")
